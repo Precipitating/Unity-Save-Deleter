@@ -83,7 +83,7 @@ std::string FindSave::GetAppDataPath()
  * Then, it checks if the path exists, and if not, it returns true as the game exists
  * in system.
  * 
- * @param path The direct path to the Player.log file, which every Unity game has.
+ * @param path The direct path to the Player.log file, which most Unity games have.
  * for opening and extracting the game file path.
  * @return True if game exists on system, else False.
  */
@@ -110,7 +110,8 @@ bool FindSave::GameExists(const std::string& path)
 		}
 		else
 		{
-			// go through line by line until we find the line that includes the word 'path', which guarantees the game path.
+			// go through line by line until we find the line that includes the word 'path',
+			// which hopefully guarantees the game path.
 			while (stream.find("path") == std::string::npos)
 			{
 				std::getline(file, stream);
