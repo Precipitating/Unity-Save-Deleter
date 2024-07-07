@@ -8,7 +8,75 @@
 #include <limits>
 
 
+/**
+ * @brief Store all Unity save folder paths that point to the company name.
+ *
+ * The intention is to see if the folder is empty after save games have been deleted,
+ * as lingering empty folders are useless. It will be deleted if so.
+ * 
+ *
+ * @param path The LocalAppData path, gained from the GetAppDataPath function.
+ * @return A string vector, full of paths that point to Unity company names w/ game titles in it.
+ */
+void FindSave::GetCompanyPaths(const std::string& path)
+{
+	for (const auto& entry : std::filesystem::directory_iterator(path))
+	{
+		if (entry.is_directory())
+		{
+			for (const auto& entry2 : std::filesystem::recursive_directory_iterator(entry))
+			{
+				// Store all Unity related save file company folder paths.
+				// If so, store path and break, as we've already found out its a Unity save folder.
+				if (entry2.is_regular_file() && (entry2.path().filename() == "output_log.txt" || entry2.path().filename() == "Player.log"))
+				{
+					companyPath.push_back(entry.path().string());
+					break;
 
+				}
+			}
+
+		}
+	}
+
+}
+/**
+ * @brief Gets other Unity save paths that don't have 'Player.log'
+ *
+ * The other standard Unity extra files that exists in save folders from my observation is output_log.txt,
+ * which does not specify the game path, so there is no way to check if it exists.
+ *
+ *
+ *
+ * @param path The LocalAppData path, gained from the GetAppDataPath function.
+ * @return A string vector, full of paths of save folders with output_log.txt only
+ */
+void FindSave::GetUnknownSavePaths(const std::string& path)
+{
+	for (const auto& entry : std::filesystem::directory_iterator(path))
+	{
+		if (entry.is_directory())
+		{
+			for (const auto& entry2 : std::filesystem::recursive_directory_iterator(entry))
+			{
+				// find Unity related files, and check if the game exists in system.
+				if (entry2.is_regular_file() && entry2.path().filename() == "output_log.txt")
+				{
+					std::string path = entry2.path().u8string();
+					// remove Player.log from path to make game name extraction easier
+					std::string gameFolder = path.substr(0, path.find_last_of('\\'));
+
+					unknownSavePaths.push_back(gameFolder);
+
+
+
+				}
+			}
+
+		}
+	}
+
+}
 /**
  * @brief Attempts to store all paths to save folders that has no game in system.
  *
@@ -20,9 +88,8 @@
  * @param path The LocalAppData path, gained from the GetAppDataPath function.
  * @return A string vector, full of paths of save folders with no games (if it exists)
  */
-std::vector<std::string> FindSave::GetFolderContents(const std::string& path)
+void FindSave::GetUnusedSavePaths(const std::string& path)
 {
-	std::vector<std::string> dir;
 	for (const auto& entry : std::filesystem::directory_iterator(path))
 	{
 		if (entry.is_directory())
@@ -33,18 +100,19 @@ std::vector<std::string> FindSave::GetFolderContents(const std::string& path)
 				if (entry2.is_regular_file() && entry2.path().filename() == "Player.log")
 				{
 					std::string path = entry2.path().u8string();
+					// remove output_log.txt from path to make game name extraction easier
 					std::string gameFolder = path.substr(0, path.find_last_of('\\'));
 					if (!GameExists(path))
 					{
-						dir.push_back(gameFolder);
+						unlinkedSavePaths.push_back(gameFolder);
 					}
+
 
 				}
 			}
 			
 		}
 	}
-	return dir;
 
 }
 /**
@@ -101,11 +169,15 @@ bool FindSave::GameExists(const std::string& path)
 		if (firstLine.find("Mono") != std::string::npos)
 		{
 			firstLine = firstLine.substr(firstLine.find_first_of("'"), firstLine.find_last_of("'"));
+
+			// remove apostrophe from string
+			firstLine = firstLine.substr(1, firstLine.size() - 2);
 		}
 		// Second line format: [Subsystems] Discovering subsystems at path (game path)
 		else if (firstLine.find("Loading") != std::string::npos)
 		{
 			firstLine = firstLine.substr(firstLine.find_first_of(':') - 1, firstLine.size() - 1);
+
 
 		}
 		else
@@ -121,8 +193,6 @@ bool FindSave::GameExists(const std::string& path)
 
 		}
 
-		// remove apostrophe from string
-		firstLine = firstLine.substr(1, firstLine.size() - 2);
 
 		// check if extracted string exists, if it does return true.
 		if (std::filesystem::exists(firstLine))
@@ -134,4 +204,20 @@ bool FindSave::GameExists(const std::string& path)
 
 	file.close();
 	return result;
+}
+
+
+
+/**
+ * @brief Extracts game name from path.
+ *
+ * Gets deepest folder in path, getting the last \ to achieve this.
+ *
+ *
+ * @param path Should be a string with the game name as the last folder in path.
+ * @returns Game name string
+ */
+std::string FindSave::ExtractGameName(const std::string& path)
+{
+	return path.substr(path.find_last_of('\\') + 1, path.size() - 1);
 }
