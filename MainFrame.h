@@ -7,6 +7,8 @@ class MainFrame : public wxFrame
 {
 public:
 	MainFrame(const wxString& title);
+	void OnDeleteClicked(wxCommandEvent& event);
+	void OnRescanClicked(wxCommandEvent& event);
 	void AddSavePathForm(wxPanel* wxPanel, std::string formTitle, int pathType = 0, int posXOffset = 0, int posYOffset = 0);
 
 private:

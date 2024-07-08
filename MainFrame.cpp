@@ -4,17 +4,23 @@
 #include "Constants.h"
 
 
+
+
+
 MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 {
 	// populate vector with path data
 	appDataPath = finder.GetAppDataPath();
-	finder.GetCompanyPath(appDataPath);
+	finder.GetCompanyPaths(appDataPath);
 	finder.GetUnusedSavePaths(appDataPath);
 	finder.GetUnknownSavePaths(appDataPath);
 
 	wxPanel* panel = new wxPanel(this);
 	AddSavePathForm(panel,CONSTANT::UNLINKED_FORM_TITLE);
 	AddSavePathForm(panel, CONSTANT::UNKNOWN_FORM_TITLE, 1, CONSTANT::FORM_X_OFFSET);
+	CreateStatusBar();
+
+
 
 
 
@@ -53,6 +59,7 @@ void MainFrame::AddSavePathForm(wxPanel* panel,std::string formTitle,int pathTyp
 	{
 	case 0:
 	{
+		// unlinked games
 		for (const std::string& path : finder.GetUnlinkedPathsVector())
 		{
 			// ensure it is encoded properly to UT8 if there are symbols.
@@ -63,6 +70,7 @@ void MainFrame::AddSavePathForm(wxPanel* panel,std::string formTitle,int pathTyp
 		break;
 	}
 	case 1:
+		// unknown games
 		for (const std::string& path : finder.GetUnknownPathsVector())
 		{
 			// ensure it is encoded properly to UT8 if there are symbols.
@@ -83,4 +91,32 @@ void MainFrame::AddSavePathForm(wxPanel* panel,std::string formTitle,int pathTyp
 		wxPoint(CONSTANT::LISTBOX_POS.first + posXOffset, CONSTANT::LISTBOX_POS.second + posYOffset),
 		wxSize(CONSTANT::LISTBOX_SIZE.first, CONSTANT::LISTBOX_SIZE.second),
 		choices);
+
+
+	// bind buttons to correct funcs
+	switch (pathType)
+	{
+	case 0:
+	{
+		rescanButton->Bind(wxEVT_BUTTON, &MainFrame::OnRescanClicked, this);
+		deleteButton->Bind(wxEVT_BUTTON, &MainFrame::OnDeleteClicked, this);
+	}
+	case 1:
+		rescanButton->Bind(wxEVT_BUTTON, &MainFrame::OnRescanClicked, this);
+		deleteButton->Bind(wxEVT_BUTTON, &MainFrame::OnDeleteClicked, this);
+
+	}
+
+}
+
+
+void MainFrame::OnDeleteClicked(wxCommandEvent& event)
+{
+	wxLogStatus("Delete clicked");
+
+}
+void MainFrame::OnRescanClicked(wxCommandEvent& event)
+{
+	wxLogStatus("Rescan clicked");
+
 }

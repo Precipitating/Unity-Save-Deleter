@@ -30,7 +30,7 @@ void FindSave::GetCompanyPaths(const std::string& path)
 				// If so, store path and break, as we've already found out its a Unity save folder.
 				if (entry2.is_regular_file() && (entry2.path().filename() == "output_log.txt" || entry2.path().filename() == "Player.log"))
 				{
-					companyPath.push_back(entry.path().string());
+					companyPath.push_back(entry.path().u8string());
 					break;
 
 				}

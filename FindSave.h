@@ -12,6 +12,7 @@ public:
 	std::string ExtractGameName(const std::string& path);
 	std::vector<std::string> GetUnlinkedPathsVector() const { return unlinkedSavePaths; }
 	std::vector<std::string> GetUnknownPathsVector() const { return unknownSavePaths; }
+	std::vector<std::string> GetCompanyPathsVector() const { return companyPath; }
 	
 
 
