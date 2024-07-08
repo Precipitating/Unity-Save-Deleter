@@ -2,7 +2,7 @@
 #include <wx/wx.h>
 #include "FindSave.h"
 #include "Constants.h"
-
+#include <filesystem>
 
 
 
@@ -51,8 +51,121 @@ void MainFrame::AddSavePathForm(wxPanel* panel,std::string formTitle,int pathTyp
 		wxPoint(CONSTANT::LIST_TITLE_POS.first + posXOffset, CONSTANT::LIST_TITLE_POS.second + posYOffset));
 
 	// convert string paths to a wxArrayString
-
+	wxArrayString choices = GenerateCheckListElements(pathType);
 	
+
+	// checklist
+
+	// populate list with games
+	wxCheckListBox* pathList = new wxCheckListBox(panel,
+		wxID_ANY,
+		wxPoint(CONSTANT::LISTBOX_POS.first + posXOffset, CONSTANT::LISTBOX_POS.second + posYOffset),
+		wxSize(CONSTANT::LISTBOX_SIZE.first, CONSTANT::LISTBOX_SIZE.second),
+		choices);
+
+	// bind buttons to functions
+	rescanButton->Bind(wxEVT_BUTTON, [this, pathList, pathType](wxCommandEvent& event) { this->OnRescanClicked(event, pathList, pathType); });
+	deleteButton->Bind(wxEVT_BUTTON, [this, pathList, pathType](wxCommandEvent& event) { this->OnDeleteClicked(event, pathList, pathType); });
+
+
+}
+
+
+void MainFrame::OnDeleteClicked(wxCommandEvent& event, wxCheckListBox* list, int pathType)
+{
+	// early return if 0 checked items
+	wxArrayInt checkedItems;
+	list->GetCheckedItems(checkedItems);
+	if (checkedItems.empty())
+	{
+		wxMessageBox("No checked items");
+		return;
+	}
+
+	// go thru all list elements and get checked items & delete
+	for (int i = 0; i < list->GetCount(); ++i)
+	{
+		if (list->IsChecked(i))
+		{
+			std::filesystem::path pathToUTF8;
+			// unlinked
+			if (pathType == 0)
+			{
+				// convert to UTF8 incase the path isn't English and uses symbols.
+				pathToUTF8 = std::filesystem::u8path(finder.GetUnlinkedPathsVector()[i]);
+
+			}
+			// unknown
+			else if (pathType == 1)
+			{
+				// convert to UTF8 incase the path isn't English and uses symbols.
+				pathToUTF8 = std::filesystem::u8path(finder.GetUnknownPathsVector()[i]);
+
+
+			}
+
+			// delete folder
+			if (std::filesystem::exists(pathToUTF8))
+			{
+				try
+				{
+					std::filesystem::remove_all(pathToUTF8);
+				}
+				catch (const std::filesystem::filesystem_error& e)
+				{
+					wxMessageBox("Error deleting file: ", e.what());
+				}
+				catch (const std::exception& e)
+				{
+					wxMessageBox("Unexpected error:", e.what());
+
+				}
+			}
+
+
+		}
+	}
+	finder.RemoveEmptyFolders();
+
+	wxMessageBox("Saves deleted");
+
+	RescanDirectory(list, pathType);
+	
+
+}
+void MainFrame::OnRescanClicked(wxCommandEvent& event, wxCheckListBox* list, int pathType)
+{
+	RescanDirectory(list, pathType);
+
+}
+
+void MainFrame::RescanDirectory(wxCheckListBox* list, int pathType)
+{
+	// clear list and rescan directory
+	list->Clear();
+	finder.GetCompanyPaths(appDataPath);
+	// update path vector
+	switch (pathType)
+	{
+	case 0:
+		finder.GetUnusedSavePaths(appDataPath);
+		break;
+	case 1:
+		finder.GetUnknownSavePaths(appDataPath);
+		break;
+	}
+
+	// readd new paths
+	wxArrayString choices = GenerateCheckListElements(pathType);
+
+	for (const auto& updatedPath : choices)
+	{
+		list->Append(updatedPath);
+	}
+}
+
+wxArrayString MainFrame::GenerateCheckListElements(int pathType)
+{
 	wxArrayString choices;
 
 	switch (pathType)
@@ -67,6 +180,8 @@ void MainFrame::AddSavePathForm(wxPanel* panel,std::string formTitle,int pathTyp
 			wxString str = wxString::FromUTF8(gameName.c_str());
 			choices.Add(str);
 		}
+
+
 		break;
 	}
 	case 1:
@@ -77,46 +192,12 @@ void MainFrame::AddSavePathForm(wxPanel* panel,std::string formTitle,int pathTyp
 			std::string gameName = finder.ExtractGameName(path);
 			wxString str = wxString::FromUTF8(gameName.c_str());
 			choices.Add(str);
+
 		}
 		break;
 
-	}
-
-
-	// checklist
-
-	// populate list with games
-	wxCheckListBox* pathList = new wxCheckListBox(panel,
-		wxID_ANY,
-		wxPoint(CONSTANT::LISTBOX_POS.first + posXOffset, CONSTANT::LISTBOX_POS.second + posYOffset),
-		wxSize(CONSTANT::LISTBOX_SIZE.first, CONSTANT::LISTBOX_SIZE.second),
-		choices);
-
-
-	// bind buttons to correct funcs
-	switch (pathType)
-	{
-	case 0:
-	{
-		rescanButton->Bind(wxEVT_BUTTON, &MainFrame::OnRescanClicked, this);
-		deleteButton->Bind(wxEVT_BUTTON, &MainFrame::OnDeleteClicked, this);
-	}
-	case 1:
-		rescanButton->Bind(wxEVT_BUTTON, &MainFrame::OnRescanClicked, this);
-		deleteButton->Bind(wxEVT_BUTTON, &MainFrame::OnDeleteClicked, this);
 
 	}
 
-}
-
-
-void MainFrame::OnDeleteClicked(wxCommandEvent& event)
-{
-	wxLogStatus("Delete clicked");
-
-}
-void MainFrame::OnRescanClicked(wxCommandEvent& event)
-{
-	wxLogStatus("Rescan clicked");
-
+	return choices;
 }

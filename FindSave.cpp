@@ -20,6 +20,10 @@
  */
 void FindSave::GetCompanyPaths(const std::string& path)
 {
+	if (!companyPath.empty())
+	{
+		companyPath.clear();
+	}
 	for (const auto& entry : std::filesystem::directory_iterator(path))
 	{
 		if (entry.is_directory())
@@ -53,6 +57,10 @@ void FindSave::GetCompanyPaths(const std::string& path)
  */
 void FindSave::GetUnknownSavePaths(const std::string& path)
 {
+	if (!unknownSavePaths.empty())
+	{
+		unknownSavePaths.clear();
+	}
 	for (const auto& entry : std::filesystem::directory_iterator(path))
 	{
 		if (entry.is_directory())
@@ -90,6 +98,10 @@ void FindSave::GetUnknownSavePaths(const std::string& path)
  */
 void FindSave::GetUnusedSavePaths(const std::string& path)
 {
+	if (!unlinkedSavePaths.empty())
+	{
+		unlinkedSavePaths.clear();
+	}
 	for (const auto& entry : std::filesystem::directory_iterator(path))
 	{
 		if (entry.is_directory())
@@ -148,7 +160,7 @@ std::string FindSave::GetAppDataPath()
  * There are a couple of variations on how Player.log is formatted, I identify and
  * extract the game file path for some of these variations.  
  *
- * Then, it checks if the path exists, and if not, it returns true as the game exists
+ * Then, it checks if the path exists, and if so, it returns true as the game exists
  * in system.
  * 
  * @param path The direct path to the Player.log file, which most Unity games have.
@@ -189,13 +201,15 @@ bool FindSave::GameExists(const std::string& path)
 				std::getline(file, stream);
 			}
 			firstLine = stream;
-			firstLine = firstLine.substr(firstLine.find("path") + 5, firstLine.size() - 1);
+			firstLine = firstLine.substr(firstLine.find("path") + 5, firstLine.size());
+			firstLine = firstLine.substr(0, firstLine.find_last_of('/'));
+
 
 		}
 
-
+		std::filesystem::path toUTF8 = std::filesystem::u8path(firstLine);
 		// check if extracted string exists, if it does return true.
-		if (std::filesystem::exists(firstLine))
+		if (std::filesystem::exists(toUTF8))
 		{
 			result = true;
 		}
@@ -220,4 +234,23 @@ bool FindSave::GameExists(const std::string& path)
 std::string FindSave::ExtractGameName(const std::string& path)
 {
 	return path.substr(path.find_last_of('\\') + 1, path.size() - 1);
+}
+
+/**
+ * @brief Remove all empty Unity save folders
+ *
+ * Should be called after deleting saves, to remove all empty directories.
+ *
+ */
+void FindSave::RemoveEmptyFolders()
+{
+	for (const std::string& path : companyPath)
+	{
+		std::filesystem::path pathToUTF8 = std::filesystem::u8path(path);
+
+		if (std::filesystem::is_empty(pathToUTF8))
+		{
+			std::filesystem::remove(pathToUTF8);
+		}
+	}
 }
