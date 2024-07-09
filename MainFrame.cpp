@@ -82,7 +82,7 @@ void MainFrame::OnDeleteClicked(wxCommandEvent& event, wxCheckListBox* list, int
 		return;
 	}
 
-	// go thru all list elements and get checked items & delete
+	// go thru all list elements, get checked items & delete
 	for (int i = 0; i < list->GetCount(); ++i)
 	{
 		if (list->IsChecked(i))
@@ -104,6 +104,9 @@ void MainFrame::OnDeleteClicked(wxCommandEvent& event, wxCheckListBox* list, int
 
 			}
 
+			// delete PlayerPref key for associated game in the registry.
+			finder.DeletePlayerPrefPath(pathToUTF8.u8string());
+
 			// delete folder
 			if (std::filesystem::exists(pathToUTF8))
 			{
@@ -120,12 +123,17 @@ void MainFrame::OnDeleteClicked(wxCommandEvent& event, wxCheckListBox* list, int
 					wxMessageBox("Unexpected error:", e.what());
 
 				}
+
+
 			}
 
 
 		}
 	}
 	finder.RemoveEmptyFolders();
+
+
+
 
 	wxMessageBox("Saves deleted");
 

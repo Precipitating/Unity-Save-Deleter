@@ -6,6 +6,9 @@
 #include <iostream>
 #include <fstream>
 #include <limits>
+#include <codecvt>
+
+
 
 
 /**
@@ -253,4 +256,67 @@ void FindSave::RemoveEmptyFolders()
 			std::filesystem::remove(pathToUTF8);
 		}
 	}
+}
+
+void FindSave::DeletePlayerPrefPath(const std::string& path)
+{
+	std::string toBackSlash = FwdSlashToBackSlash(path);
+	std::string removeFluff = toBackSlash.substr(toBackSlash.find("LocalLow\\") + 9, toBackSlash.size());
+	std::string toRegPath = ("SOFTWARE\\" + removeFluff);
+
+	// convert to wstring
+	std::filesystem::path test = std::filesystem::u8path(toRegPath);
+	std::wstring utf8Path = test.wstring();
+
+
+
+	HKEY hKey;
+	LONG result = RegOpenKeyExW(HKEY_CURRENT_USER, utf8Path.c_str(), 0, KEY_READ, &hKey);
+
+	if (result == ERROR_SUCCESS)
+	{
+		LONG deleteKey = RegDeleteKeyW(HKEY_CURRENT_USER, utf8Path.c_str());
+
+		// also delete company folder if its empty.
+		DeleteEmptyRegistryFolder(utf8Path);
+
+
+
+	}
+}
+
+void FindSave::DeleteEmptyRegistryFolder(const std::wstring& path)
+{
+	HKEY hKey;
+	std::wstring utf8Path = path;
+
+	utf8Path = utf8Path.substr(0, utf8Path.find_last_of('\\'));
+	// open reg key
+	LONG result = RegOpenKeyExW(HKEY_CURRENT_USER, utf8Path.c_str(), 0, KEY_READ, &hKey);
+	if (result == ERROR_SUCCESS)
+	{
+		DWORD subKeyCount = 0;
+		// if key exists, check if theres any folders in it, if none, delete.
+		result = RegQueryInfoKeyW(hKey, nullptr, nullptr, nullptr, &subKeyCount, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+
+		if (result == ERROR_SUCCESS)
+		{
+			if (subKeyCount == 0)
+			{
+				LONG deleteKey = RegDeleteKeyW(HKEY_CURRENT_USER, utf8Path.c_str());
+			}
+		}
+	}
+}
+
+std::string FindSave::FwdSlashToBackSlash(const std::string& str)
+{
+	std::string convertedString = str;
+	size_t pos = 0;
+	while ((convertedString.find("//", pos) != std::string::npos))
+	{
+		convertedString.replace(pos, 2, "\\");
+	}
+
+	return convertedString;
 }
