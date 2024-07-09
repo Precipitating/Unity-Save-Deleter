@@ -242,7 +242,7 @@ std::string FindSave::ExtractGameName(const std::string& path)
 /**
  * @brief Remove all empty Unity save folders
  *
- * Should be called after deleting saves, to remove all empty directories.
+ * Should be called after deleting saves, to remove all empty directories in the LocalLow folder.
  *
  */
 void FindSave::RemoveEmptyFolders()
@@ -258,6 +258,14 @@ void FindSave::RemoveEmptyFolders()
 	}
 }
 
+/**
+ * @brief Delete the associated PlayerPref registry key alongside the LocalLow folder.
+ *
+ * Checks if game path exists in the registry, then deletes it.
+ * It also checks the company folder afterwards and deletes that as well if empty. 	 
+ *
+ * @param path The direct path to the game, used to extract company & game folder.
+ */
 void FindSave::DeletePlayerPrefPath(const std::string& path)
 {
 	std::string toBackSlash = FwdSlashToBackSlash(path);
@@ -284,12 +292,21 @@ void FindSave::DeletePlayerPrefPath(const std::string& path)
 
 	}
 }
-
+/**
+ * @brief Delete the path directory if it is empty on the registry.
+ *
+ * Used after deleting the PlayerPrefs for associated game.
+ * Deletes company folder if it is empty.
+ * 
+ *
+ * @param path The direct path to the game in registry.
+ */
 void FindSave::DeleteEmptyRegistryFolder(const std::wstring& path)
 {
 	HKEY hKey;
 	std::wstring utf8Path = path;
 
+	// get company name, so we can check inside it.
 	utf8Path = utf8Path.substr(0, utf8Path.find_last_of('\\'));
 	// open reg key
 	LONG result = RegOpenKeyExW(HKEY_CURRENT_USER, utf8Path.c_str(), 0, KEY_READ, &hKey);
@@ -308,7 +325,15 @@ void FindSave::DeleteEmptyRegistryFolder(const std::wstring& path)
 		}
 	}
 }
-
+/**
+ * @brief Changes all forward slashes to backslashes for registry path compatibility
+ *
+ * Finds all double forward slashes which represents one forward slash, and changes
+ * them to double back slashes.
+ * 
+ *
+ * @param str The string to be evaluated, which should be a path.
+ */
 std::string FindSave::FwdSlashToBackSlash(const std::string& str)
 {
 	std::string convertedString = str;

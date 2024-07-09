@@ -2,6 +2,7 @@
 #include <string>
 #include <utility>
 
+
 namespace CONSTANT
 {
 	const std::string APP_NAME = "Unity Save Deleter";

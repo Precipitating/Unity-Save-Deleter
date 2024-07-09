@@ -5,6 +5,7 @@
 
 wxIMPLEMENT_APP(App);
 
+// INITIALIZES AND RUNS THE GUI
 bool App::OnInit()
 {
     // library handles loose pointers

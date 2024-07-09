@@ -6,7 +6,18 @@
 
 
 
-
+/**
+ * @brief Initialize GUI
+ *
+ * Initializes all the elements using wxWidgets which include:
+ * 2 uneditable text labels
+ * 2 CheckListBox
+ * 4 buttons
+ *
+ *
+ * @param title The title of the program which appears on top of the program.
+ * @return Constructor
+ */
 MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 {
 	// populate vector with path data
@@ -18,17 +29,18 @@ MainFrame::MainFrame(const wxString& title) : wxFrame(nullptr, wxID_ANY, title)
 	wxPanel* panel = new wxPanel(this);
 	AddSavePathForm(panel,CONSTANT::UNLINKED_FORM_TITLE);
 	AddSavePathForm(panel, CONSTANT::UNKNOWN_FORM_TITLE, 1, CONSTANT::FORM_X_OFFSET);
-	CreateStatusBar();
-
-
-
-
-
-
 
 }
 
-
+/**
+ * @brief Attempts to store all paths to save folders that has no game in system.
+ *
+ * Goes through LocalAppData, extracts game path from Player.log, and populates the
+ * string vector full of paths of save folders with no games in system.
+ *
+ * @param path The LocalAppData path, gained from the GetAppDataPath function.
+ * @return A string vector, full of paths of save folders with no games (if it exists)
+ */
 void MainFrame::AddSavePathForm(wxPanel* panel,std::string formTitle,int pathType, int posXOffset, int posYOffset)
 {
 	// buttons
@@ -70,7 +82,19 @@ void MainFrame::AddSavePathForm(wxPanel* panel,std::string formTitle,int pathTyp
 
 }
 
+/**
+ * @brief Deletes selected elements from the CheckListBox
+ *
+ * Deletes the save files located in LocalLow and PlayerPrefs in registry.
+ * Also checks if the company folder is empty afterwards, and removes that 
+ * in LocalLow and Registry.
 
+
+ * @param event Required for event handling
+ * @param list The list of elements in the CheckListBox
+ * @param pathType 0 means list with unlinked game paths, whilst 1 is unknown game paths
+ *		  used to differentiate which button is pressed and which list to use.
+ */
 void MainFrame::OnDeleteClicked(wxCommandEvent& event, wxCheckListBox* list, int pathType)
 {
 	// early return if 0 checked items
@@ -104,9 +128,6 @@ void MainFrame::OnDeleteClicked(wxCommandEvent& event, wxCheckListBox* list, int
 
 			}
 
-			// delete PlayerPref key for associated game in the registry.
-			finder.DeletePlayerPrefPath(pathToUTF8.u8string());
-
 			// delete folder
 			if (std::filesystem::exists(pathToUTF8))
 			{
@@ -127,6 +148,9 @@ void MainFrame::OnDeleteClicked(wxCommandEvent& event, wxCheckListBox* list, int
 
 			}
 
+			// delete PlayerPref key for associated game in the registry.
+			finder.DeletePlayerPrefPath(pathToUTF8.u8string());
+
 
 		}
 	}
@@ -141,12 +165,33 @@ void MainFrame::OnDeleteClicked(wxCommandEvent& event, wxCheckListBox* list, int
 	
 
 }
+/**
+ * @brief Rescans directory and updates the CheckListBox
+ *
+ * Clears the CheckListBox, rescans the directory and appends the new list.
+ * 
+ * 
+ * @param event Required for event handling
+ * @param list The current list of elements in the CheckListBox
+ * @param pathType 0 means list with unlinked game paths, whilst 1 is unknown game paths
+ *		  used to differentiate which button is pressed and which list to use.
+ */
 void MainFrame::OnRescanClicked(wxCommandEvent& event, wxCheckListBox* list, int pathType)
 {
 	RescanDirectory(list, pathType);
 
 }
-
+/**
+ * @brief Rescans directory and updates the CheckListBox
+ *
+ * Clears the CheckListBox, rescans the directory and appends the new list.
+ *
+ *
+ * @param event Required for event handling
+ * @param list The current list of elements in the CheckListBox
+ * @param pathType 0 means list with unlinked game paths, whilst 1 is unknown game paths
+ *		  used to differentiate which button is pressed and which list to use.
+ */
 void MainFrame::RescanDirectory(wxCheckListBox* list, int pathType)
 {
 	// clear list and rescan directory
@@ -172,6 +217,17 @@ void MainFrame::RescanDirectory(wxCheckListBox* list, int pathType)
 	}
 }
 
+/**
+ * @brief Formats the game path string into a compatible wxString to add to wxArrayString
+ *
+ * Gets the game path, extracts game name and adds to wxArrayString.
+ * Used to rescan directory and update the list.
+ *
+ *
+ * @param pathType 0 means list with unlinked game paths, whilst 1 is unknown game paths
+ *		  used to differentiate which button is pressed and which list to use.
+ * @returns A list of wxArrayStrings of unlinked/unknown game paths for wxCheckListBox.
+ */
 wxArrayString MainFrame::GenerateCheckListElements(int pathType)
 {
 	wxArrayString choices;
