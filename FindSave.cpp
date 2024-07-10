@@ -54,7 +54,6 @@ void FindSave::GetCompanyPaths(const std::string& path)
  * which does not specify the game path, so there is no way to check if it exists.
  *
  *
- *
  * @param path The LocalAppData path, gained from the GetAppDataPath function.
  * @return A string vector, full of paths of save folders with output_log.txt only
  */
@@ -68,20 +67,44 @@ void FindSave::GetUnknownSavePaths(const std::string& path)
 	{
 		if (entry.is_directory())
 		{
+			bool playerLogFound = false;
+			// company folder
 			for (const auto& entry2 : std::filesystem::recursive_directory_iterator(entry))
 			{
-				// find Unity related files, and check if the game exists in system.
-				if (entry2.is_regular_file() && entry2.path().filename() == "output_log.txt")
+				// game folder
+				if (entry2.is_directory())
 				{
-					std::string path = entry2.path().u8string();
-					// remove Player.log from path to make game name extraction easier
-					std::string gameFolder = path.substr(0, path.find_last_of('\\'));
+					bool playerLogFound = false;
+					bool outputLogFound = false;
+					std::string outputLogPath;
+					// files in game folder
+					for (const auto& entry3 : std::filesystem::recursive_directory_iterator(entry2))
+					{
+						// this would be handled by GetUnusedSavePaths(), don't bother with this directory.
+						if (entry3.is_regular_file() && entry3.path().filename() == "Player.log")
+						{
+							playerLogFound = true;
+						}
+						
+						if (entry3.is_regular_file() && entry3.path().filename() == "output_log.txt")
+						{
+							outputLogFound = true;
+							outputLogPath = entry3.path().u8string();
 
-					unknownSavePaths.push_back(gameFolder);
+						}
+					}
 
+					// this means the game folder only has output_log.txt, which hasn't been processed yet.
+					if (outputLogFound && !playerLogFound)
+					{
+						std::string path = outputLogPath;
+						// remove Player.log from path to make game name extraction easier
+						std::string gameFolder = path.substr(0, path.find_last_of('\\'));
 
-
+						unknownSavePaths.push_back(gameFolder);
+					}
 				}
+
 			}
 
 		}
